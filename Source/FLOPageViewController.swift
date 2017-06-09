@@ -10,6 +10,11 @@ import Cocoa
 
 private let ArrowSize = NSSize(width: 20, height: 40)
 
+protocol FLOPageViewControllerDelegate {
+    func didUpdate(_ pageViewController: FLOPageViewController)
+    func didChangePage(_ pageViewController: FLOPageViewController, index: Int)
+}
+
 class FLOPageViewController: NSViewController {
     
     fileprivate weak var pageController: NSPageController!
@@ -24,6 +29,8 @@ class FLOPageViewController: NSViewController {
     
     private var trackingRectTag: NSTrackingRectTag?
     private var mouseInside = false
+    
+    var pageViewDelegate: FLOPageViewControllerDelegate?
     
 // MARK: - Instantiation
     
@@ -63,7 +70,7 @@ class FLOPageViewController: NSViewController {
         self.updateBackgroundColor()
         
         // changing the view's frame is somehow not enough (NSPageController is weird), so we create a new view
-        self.pageController.view = NSView(frame: self.view.bounds)
+        self.pageController.view = NSView(frame: self.view.bounds) // that's where the issue is (NZ)
         self.pageController.view.translatesAutoresizingMaskIntoConstraints = false
         self.view.addSubview(self.pageController.view)
         
@@ -77,6 +84,7 @@ class FLOPageViewController: NSViewController {
         
         self.updatePageControl()
         self.updateArrowControls()
+        self.view.layout()
     }
     
 // MARK: - View Controller Management
@@ -100,6 +108,15 @@ class FLOPageViewController: NSViewController {
     
     func loadViewControllers(_ viewControllerIdentifiers: [String], from storyboard: NSStoryboard) {
         self.viewControllers = viewControllerIdentifiers.map({ storyboard.instantiateController(withIdentifier: $0) as! NSViewController })
+    }
+    
+    override func viewDidLayout() {
+        if let vc = self.pageController.selectedViewController {
+            // we already have a view controller, and it's probably the wrong size
+            var rect = self.pageController.view.frame
+            rect.origin = NSPoint.zero
+            vc.view.frame = rect
+        }
     }
     
 // MARK: - Page Control
@@ -339,6 +356,8 @@ class FLOPageViewController: NSViewController {
     private func updatePages() {
         self.pageControl?.numberOfPages = UInt(self.viewControllers.count)
         self.pageControl?.selectedPage = UInt(self.pageController.selectedIndex)
+        
+        self.pageViewDelegate?.didUpdate(self)
     }
     
 }
@@ -361,6 +380,7 @@ extension FLOPageViewController: NSPageControllerDelegate {
         guard let index = self.viewControllers.index(of: viewController) else { return }
         
         self.pageControl?.selectedPage = UInt(index)
+        self.pageViewDelegate?.didChangePage(self, index: Int(index))
         self.hideArrowControls(false)
         
     }
@@ -368,7 +388,6 @@ extension FLOPageViewController: NSPageControllerDelegate {
     func pageControllerDidEndLiveTransition(_ pageController: NSPageController) {
         self.pageController.completeTransition() // we need to do this, see docs
     }
-    
 }
 
 extension FLOPageViewController {
