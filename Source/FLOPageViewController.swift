@@ -82,9 +82,11 @@ class FLOPageViewController: NSViewController {
         self.bottomPageControllerConstraint = NSLayoutConstraint(item: self.pageController.view, attribute: .bottom, relatedBy: .equal, toItem: self.view, attribute: .bottom, multiplier: 1, constant: 0)
         self.view.addConstraint(self.bottomPageControllerConstraint!)
         
-        self.updatePageControl()
-        self.updateArrowControls()
-        self.view.layout()
+        DispatchQueue.main.async {
+            self.updatePageControl()
+            self.updateArrowControls()
+            self.view.layout()
+        }
     }
     
 // MARK: - View Controller Management
