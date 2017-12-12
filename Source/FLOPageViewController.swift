@@ -57,7 +57,9 @@ class FLOPageViewController: NSViewController {
         pageController.delegate = self
         pageController.transitionStyle = .horizontalStrip
 
-        self.addChildViewController(pageController)
+        if #available(OSX 10.10, *) {
+            self.addChildViewController(pageController)
+        }
         self.pageController = pageController
     }
     
